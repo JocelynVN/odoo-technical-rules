@@ -47,12 +47,12 @@ install_codex() {
 }
 
 install_cursor() {
+  local dest
   if [ "$TARGET" = "global" ]; then
-    c_blue "Cursor has no global rules file — add it via the UI:"
-    c_blue "  Settings → Rules → User Rules → paste the body of dist/cursor/.cursor/rules/odoo-technical-rules.mdc"
-    return
+    dest="$HOME/.cursor/rules/odoo-technical-rules.mdc"
+  else
+    dest="$TARGET/.cursor/rules/odoo-technical-rules.mdc"
   fi
-  local dest="$TARGET/.cursor/rules/odoo-technical-rules.mdc"
   mkdir -p "$(dirname "$dest")"
   get dist/cursor/.cursor/rules/odoo-technical-rules.mdc > "$dest"
   c_green "Cursor: installed $dest"

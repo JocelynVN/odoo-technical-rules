@@ -131,12 +131,11 @@ function installCodex(plugin, target, isGlobal) {
 }
 
 function installCursor(plugin, target, isGlobal) {
-  if (isGlobal) {
-    return console.log(C.b('  Cursor: no global rules file — add via Settings → Rules → User Rules.'));
-  }
   const srcDir = path.join(plugin.dir, 'dist', 'cursor', '.cursor', 'rules');
   if (!fs.existsSync(srcDir)) return console.log(C.y('  Cursor: no rules, skipped.'));
-  const destDir = path.join(target, '.cursor', 'rules');
+  const destDir = isGlobal
+    ? path.join(os.homedir(), '.cursor', 'rules')
+    : path.join(target, '.cursor', 'rules');
   fs.mkdirSync(destDir, { recursive: true });
   for (const f of fs.readdirSync(srcDir)) {
     fs.copyFileSync(path.join(srcDir, f), path.join(destDir, f));

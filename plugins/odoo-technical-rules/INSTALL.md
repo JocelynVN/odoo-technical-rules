@@ -128,8 +128,13 @@ Reload Cursor. The rule is scoped via `globs` to Odoo files (manifest, `models/`
 
 ### Global (all projects)
 
-Cursor → **Settings → Rules → User Rules** → paste the body of
-`dist/cursor/.cursor/rules/odoo-technical-rules.mdc` (without the frontmatter).
+The installers write the rule to `~/.cursor/rules/odoo-technical-rules.mdc` (Cursor's user-level config dir), so it applies across every project — no manual copy:
+
+```bash
+npx odoo-technical-plugins --agent cursor --global
+```
+
+> If your Cursor version doesn't pick up `~/.cursor/rules`, you can still paste the body of the `.mdc` into **Settings → Rules → User Rules**.
 
 ---
 
