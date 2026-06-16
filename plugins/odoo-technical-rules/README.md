@@ -22,6 +22,12 @@ Quick start for Claude Code:
 /plugin install odoo-technical-rules@odoo-technical-plugins
 ```
 
+One-line install for Codex & Cursor (run from your Odoo project, no clone needed):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/JocelynVN/odoo-technical-plugins/main/plugins/odoo-technical-rules/install.sh | bash
+```
+
 ## Contents
 
 ```text
