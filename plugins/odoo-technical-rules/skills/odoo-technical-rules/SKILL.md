@@ -5,12 +5,12 @@ description: Apply the project's general Odoo technical rules when writing, modi
 
 # Odoo Technical Rules
 
-You are working in an Odoo codebase. Follow the rules below for any code you write or review. The **full, authoritative ruleset** is bundled next to this file — read it when you need detail:
+You are working in an Odoo codebase. Follow the rules below for any code you write or review. The checklist here is the canonical summary; for full detail and examples, read the complete ruleset:
 
-- `rules.en.md` — English (full)
-- `rules.vi.md` — Tiếng Việt (full)
+- English: https://github.com/JocelynVN/odoo-technical-rules/blob/main/technical-rules.en.md
+- Tiếng Việt: https://github.com/JocelynVN/odoo-technical-rules/blob/main/technical-rules.vi.md
 
-When a rule here conflicts with the bundled file, the bundled file wins. Always read `rules.en.md` before a non-trivial change.
+If this repo is the working directory, those files are at the repo root (`technical-rules.en.md` / `technical-rules.vi.md`). Consult them before a non-trivial change.
 
 ## Must-follow checklist
 

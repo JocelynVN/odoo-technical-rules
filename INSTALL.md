@@ -8,7 +8,7 @@ This repo ships the Odoo technical rules in formats installable by **Claude Code
 | Codex | `AGENTS.md` | `dist/codex/AGENTS.md` |
 | Cursor | Project rule (`.mdc`) | `dist/cursor/.cursor/rules/odoo-technical-rules.mdc` |
 
-The full ruleset lives in [`technical-rules.en.md`](technical-rules.en.md) / [`technical-rules.vi.md`](technical-rules.vi.md). The agent formats above embed a must-follow checklist and link back to the full docs (the Claude skill bundles full copies so it works offline once installed).
+The full ruleset lives in **one place** — [`technical-rules.en.md`](technical-rules.en.md) / [`technical-rules.vi.md`](technical-rules.vi.md). Each agent format above embeds the same must-follow checklist and links back to these full docs (no duplicated copies).
 
 ---
 
