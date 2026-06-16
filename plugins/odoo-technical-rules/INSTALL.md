@@ -14,20 +14,22 @@ The full ruleset lives in **one place** — [`rules/technical-rules.en.md`](rule
 
 ## ⚡ Recommended: one interactive command
 
-Run from your Odoo project — no clone, no npm account:
+Run from your Odoo project:
 
 ```bash
-npx github:JocelynVN/odoo-technical-plugins
+npx odoo-technical-plugins
 ```
 
 It prompts for the plugin, the agent (Claude Code / Codex / Cursor / all), and the scope, then writes the right files. Non-interactive:
 
 ```bash
-npx github:JocelynVN/odoo-technical-plugins -- --agent all            # this project
-npx github:JocelynVN/odoo-technical-plugins -- --agent cursor
-npx github:JocelynVN/odoo-technical-plugins -- --agent codex --global
-npx github:JocelynVN/odoo-technical-plugins -- --list                 # list plugins
+npx odoo-technical-plugins --agent all            # this project
+npx odoo-technical-plugins --agent cursor
+npx odoo-technical-plugins --agent codex --global
+npx odoo-technical-plugins --list                 # list plugins
 ```
+
+> Prefer the GitHub source over npm? `npx github:JocelynVN/odoo-technical-plugins -- <flags>` works identically.
 
 This is idempotent and append-safe (won't duplicate an existing `AGENTS.md`).
 

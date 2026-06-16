@@ -16,7 +16,7 @@ Both versions have identical content and are the **single source of truth**. The
 **One command, any agent** (interactive — pick Claude Code / Codex / Cursor):
 
 ```bash
-npx github:JocelynVN/odoo-technical-plugins
+npx odoo-technical-plugins
 ```
 
 See **[INSTALL.md](INSTALL.md)** for all options (non-interactive flags, Claude Code marketplace, `curl | bash` script, manual steps).

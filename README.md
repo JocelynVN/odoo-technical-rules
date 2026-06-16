@@ -16,18 +16,20 @@ This repository is a [Claude Code plugin marketplace](https://docs.claude.com/en
 
 ### One command — any agent (recommended)
 
-Run the interactive installer from your project (no clone, no npm account needed):
+Run the interactive installer from your project:
 
 ```bash
-npx github:JocelynVN/odoo-technical-plugins
+npx odoo-technical-plugins
 ```
 
 It asks which plugin, which agent (Claude Code / Codex / Cursor / all), and the scope, then writes the right config (`.claude/skills/…`, `AGENTS.md`, or `.cursor/rules/…`). Non-interactive too:
 
 ```bash
-npx github:JocelynVN/odoo-technical-plugins -- --agent all          # this project
-npx github:JocelynVN/odoo-technical-plugins -- --agent codex --global
+npx odoo-technical-plugins --agent all          # this project
+npx odoo-technical-plugins --agent codex --global
 ```
+
+> Pinned to the GitHub source instead of npm? `npx github:JocelynVN/odoo-technical-plugins` works the same (use `--` before flags).
 
 ### Claude Code marketplace (alternative)
 
