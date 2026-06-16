@@ -9,6 +9,7 @@ Each plugin is self-contained under [`plugins/`](plugins); the [`npx` installer]
 | Plugin | Description | Docs |
 |--------|-------------|------|
 | [`odoo-technical-rules`](plugins/odoo-technical-rules) | General, vendor-neutral Odoo coding rules (naming, manifest, views, Python/ORM, security, commits, stable policy). VI + EN. | [README](plugins/odoo-technical-rules/README.md) · [Install](plugins/odoo-technical-rules/INSTALL.md) |
+| [`odoo-lint`](plugins/odoo-lint) | Make Python & JS pass Odoo's official linters (`test_lint` pylint checks + ESLint): SQL-injection, lazy translations, OWL static props/template, no private fields. | [README](plugins/odoo-lint/README.md) |
 
 > More plugins will be added here over time.
 

@@ -1,0 +1,44 @@
+# Standalone pylint config approximating Odoo's test_lint
+# (odoo/addons/test_lint/tests/test_pylint.py).
+#
+# The standard-pylint checks Odoo enables work as-is with this file:
+#     pylint --rcfile=pylintrc path/to/your_module
+#
+# NOTE: Odoo's full test_lint also runs custom checkers that live inside the
+# Odoo source (sql-injection, gettext-variable/placeholders/repr,
+# raise-unlink-override) and only run inside Odoo's own test suite. For a
+# standalone CI equivalent of those, install pylint-odoo:
+#     pip install pylint-odoo
+# then uncomment the load-plugins line below and enable its odoo checks.
+
+[MAIN]
+load-plugins=pylint.extensions.bad_builtin
+# load-plugins=pylint.extensions.bad_builtin,pylint_odoo
+
+[MESSAGES CONTROL]
+disable=all
+enable=
+    used-before-assignment,
+    undefined-variable,
+    eval-used,
+    unreachable,
+    function-redefined,
+    bad-builtin,
+    deprecated-module
+    # With pylint-odoo installed, also enable e.g.:
+    #   sql-injection,
+    #   translation-required,
+    #   translation-format-interpolation,
+    #   translation-fstring-interpolation,
+    #   print-used
+
+[DEPRECATED_BUILTINS]
+bad-functions=input
+
+[IMPORTS]
+deprecated-modules=csv,urllib,cgi,pdb,ipdb,pudb,q
+
+[REPORTS]
+reports=no
+score=no
+msg-template={msg} ({msg_id}) at {path}:{line}

@@ -6,6 +6,11 @@
       "name": "odoo-technical-rules",
       "source": "plugins/odoo-technical-rules",
       "description": "Apply general Odoo technical rules (naming, manifest, views, Python/ORM, security, commits, stable policy) when writing or reviewing Odoo module code."
+    },
+    {
+      "name": "odoo-lint",
+      "source": "plugins/odoo-lint",
+      "description": "Make Python & JS pass Odoo's official linters (test_lint pylint checks + ESLint): SQL-injection, lazy translations, OWL static props/template, and more."
     }
   ]
 }
