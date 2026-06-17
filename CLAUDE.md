@@ -101,5 +101,12 @@ linter and point it at Odoo's own checkers**:
   Odoo source.
 - `rules/eslintrc` is Odoo's own ESLint config, run via `npx eslint@8 --no-eslintrc -c eslintrc`.
 
+Those checkers only load when `odoo` is importable, so pylint must run under the Python interpreter of the
+user's Odoo env. To avoid the agent guessing, **`cmdInstall` prompts for that interpreter** (project scope
++ `odoo-test-lint` selected; flag `--python`, default `findSystemPython()` = `$VIRTUAL_ENV` or first
+`python3` on PATH) and writes it to a project-root **`.odoo-lint.json`** (`{ "python", "odoo_path" }`,
+merged so a hand-added `odoo_path` survives). The SKILL tells the agent to read that file and run
+`"<python>" -m pylint`. Non-interactive installs only write the file when `--python` is passed.
+
 We deliberately rejected shipping a stdlib reimplementation: having the Odoo source present means the
 authentic checkers are already there, so a reimplementation would only risk drift and false positives.

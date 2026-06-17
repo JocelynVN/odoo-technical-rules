@@ -37,33 +37,34 @@ linter, then point it at Odoo's own checkers. Two ready-to-use configs ship in
 this plugin's [`rules/`](https://github.com/JocelynVN/odoo-technical-plugins/tree/main/plugins/odoo-test-lint/rules).
 
 **Python — pylint loading Odoo's real checkers** (exact same checks as Odoo CI).
-The checkers only load when `odoo` is importable, so you must run the **pylint
-that lives in the user's Odoo virtualenv** — not a random global one:
+The checkers only load when `odoo` is importable, so you must run pylint with the
+**Python interpreter of the user's Odoo env** — not a random global one:
 
-1. **Find the venv path.** First read `.odoo-lint.json` in the project root and use
-   its `venv` field. If the file is missing, **ask the user** for their Odoo venv
-   path (e.g. `/path/to/venv`) and **write it** there so you never ask again — then
+1. **Find the interpreter.** Read `.odoo-lint.json` in the project root and use its
+   `python` field. The installer writes this at install time; if the file is
+   missing, **ask the user** for their Odoo Python path (e.g.
+   `/path/to/venv/bin/python`) and **write it** there so you never ask again — then
    add `.odoo-lint.json` to `.gitignore` (paths are per-developer). Valid JSON,
    `odoo_path` optional (see step 3):
    ```json
-   { "venv": "/path/to/venv", "odoo_path": "/path/to/odoo" }
+   { "python": "/path/to/venv/bin/python", "odoo_path": "/path/to/odoo" }
    ```
-2. **Run that venv's pylint** (it loads Odoo's checkers automatically because
-   `odoo` is importable there):
+2. **Run pylint via that interpreter** (it loads Odoo's checkers automatically
+   because `odoo` is importable there):
    ```bash
-   "<venv>/bin/pylint" --rcfile=<this plugin's rules/pylintrc> path/to/your_module
+   "<python>" -m pylint --rcfile=<this plugin's rules/pylintrc> path/to/your_module
    ```
-   Install pylint into that venv once if missing:
-   `"<venv>/bin/pip" install "pylint>=3.0"` (Odoo doesn't bundle it).
+   Install pylint into that interpreter once if missing:
+   `"<python>" -m pip install "pylint>=3.0"` (Odoo doesn't bundle it).
 3. **Source-checkout fallback.** If Odoo runs from a source tree that isn't
-   pip-installed (so `import odoo` fails even in the venv), pass the Odoo root via
-   `ODOO_PATH=/path/to/odoo "<venv>/bin/pylint" …` — store it as `odoo_path` in
+   pip-installed (so `import odoo` fails even there), pass the Odoo root via
+   `ODOO_PATH=/path/to/odoo "<python>" -m pylint …` — store it as `odoo_path` in
    `.odoo-lint.json` (ask once if absent).
 
 The bundled `pylintrc` lists Odoo's plugins (`_odoo_checker_sql_injection`,
 `_odoo_checker_gettext`, `_odoo_checker_unlink_override` + `bad_builtin`) and
-enables the exact messages Odoo CI does. (No Odoo source at all? `pip install
-pylint-odoo` into the venv and swap the three `_odoo_checker_*` plugins for
+enables the exact messages Odoo CI does. (No Odoo source at all? `"<python>" -m
+pip install pylint-odoo` and swap the three `_odoo_checker_*` plugins for
 `pylint_odoo` in the rcfile.)
 
 **JavaScript — ESLint with Odoo's config:**

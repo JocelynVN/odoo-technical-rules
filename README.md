@@ -36,7 +36,13 @@ It asks which plugin(s) and which agent(s) (multi-select with space) plus the sc
 ```bash
 npx odoo-technical-plugins --agent all          # this project
 npx odoo-technical-plugins --agent codex --global
+npx odoo-technical-plugins --agent claude --plugin odoo-test-lint --python /opt/odoo/venv/bin/python
 ```
+
+> Installing `odoo-test-lint` into a project also asks for the Python interpreter
+> of your Odoo env (so pylint can load Odoo's own checkers) and saves it to
+> `.odoo-lint.json`. Pass `--python <path>` to set it non-interactively; omit it
+> and the interactive installer defaults to your system python.
 
 > Pinned to the GitHub source instead of npm? `npx github:JocelynVN/odoo-technical-plugins` works the same (use `--` before flags).
 

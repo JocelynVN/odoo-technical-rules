@@ -50,16 +50,17 @@ high-signal set of checks plus custom Odoo checkers.
 
 **Run it** — the [`pylintrc`](pylintrc) here loads Odoo's own checker plugins
 (`_odoo_checker_*`) from the Odoo source, so you get the authentic Odoo checks.
-Run pylint **from your Odoo virtualenv** so `odoo` is importable:
+Run pylint with **your Odoo env's Python interpreter** so `odoo` is importable
+(the npx installer saves it to `.odoo-lint.json`):
 ```bash
-"<venv>/bin/pip" install "pylint>=3.0"               # Odoo doesn't bundle pylint
-"<venv>/bin/pylint" --rcfile=pylintrc path/to/your_module
+"<python>" -m pip install "pylint>=3.0"              # Odoo doesn't bundle pylint
+"<python>" -m pylint --rcfile=pylintrc path/to/your_module
 ```
 The rcfile's `init-hook` locates the checkers next to the importable `odoo`
 package. If Odoo runs from a source checkout that isn't pip-installed, export the
-Odoo root instead: `ODOO_PATH=/path/to/odoo "<venv>/bin/pylint" --rcfile=pylintrc …`.
-No Odoo source? `pip install pylint-odoo` and swap the `_odoo_checker_*` plugins
-for `pylint_odoo` in the rcfile.
+Odoo root instead: `ODOO_PATH=/path/to/odoo "<python>" -m pylint --rcfile=pylintrc …`.
+No Odoo source? `"<python>" -m pip install pylint-odoo` and swap the
+`_odoo_checker_*` plugins for `pylint_odoo` in the rcfile.
 
 ## JavaScript — ESLint
 

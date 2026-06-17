@@ -4,27 +4,27 @@
 # you get Odoo's authentic SQL-injection / gettext / unlink-override checks,
 # not a reimplementation.
 #
-# HOW TO RUN — use the pylint from YOUR Odoo virtualenv, so that `odoo` is
-# importable and Odoo's own checkers load automatically. Ask the user for their
-# venv path if you don't know it, then:
+# HOW TO RUN — use the Python interpreter of YOUR Odoo env, so that `odoo` is
+# importable and Odoo's own checkers load automatically. The npx installer saves
+# it to .odoo-lint.json ("python" field); otherwise ask the user, then:
 #
-#     "<venv>/bin/pylint" --rcfile=pylintrc path/to/your_module
+#     "<python>" -m pylint --rcfile=pylintrc path/to/your_module
 #
-# (Install pylint into that venv once if missing: "<venv>/bin/pip" install "pylint>=3.0".
-# Odoo does NOT ship pylint in requirements.txt and its own test skips when it's
-# absent, so this one-time install is expected.)
+# (Install pylint into that interpreter once if missing: "<python>" -m pip
+# install "pylint>=3.0". Odoo does NOT ship pylint in requirements.txt and its
+# own test skips when it's absent, so this one-time install is expected.)
 #
 # The init-hook below then finds Odoo's checker modules next to the importable
 # `odoo` package and adds them to sys.path so load-plugins can import them by
 # name — the same mechanism test_pylint.py uses.
 #
 # If Odoo runs from a SOURCE checkout that isn't pip-installed (so `import odoo`
-# fails even inside the venv), export the Odoo root explicitly — the dir that
-# contains the `odoo/` package — and the init-hook will use it:
-#     ODOO_PATH=/path/to/odoo "<venv>/bin/pylint" --rcfile=pylintrc path/to/your_module
+# fails even there), export the Odoo root explicitly — the dir that contains the
+# `odoo/` package — and the init-hook will use it:
+#     ODOO_PATH=/path/to/odoo "<python>" -m pylint --rcfile=pylintrc path/to/your_module
 #
-# Pure-pip alternative (no Odoo source needed): `pip install pylint-odoo` and
-# replace the three _odoo_checker_* plugins below with `pylint_odoo`.
+# Pure-pip alternative (no Odoo source needed): `"<python>" -m pip install
+# pylint-odoo` and replace the three _odoo_checker_* plugins below with `pylint_odoo`.
 
 [MAIN]
 # Make Odoo's own checker modules importable (mirrors test_pylint.py). Prefer an

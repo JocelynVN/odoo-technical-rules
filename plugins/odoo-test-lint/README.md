@@ -22,25 +22,25 @@ plugins** that live in the Odoo source you already have
 (`odoo/addons/test_lint/tests/_odoo_checker_*.py`), and its JS check is an
 **ESLint** config. Odoo doesn't ship pylint/eslint, so install the linter and
 point it at Odoo's own checkers via the configs in [`rules/`](rules). The
-checkers only load when `odoo` is importable, so run the pylint **from your Odoo
-virtualenv** (`<venv>/bin/pylint`) — the installed rules make the agent ask for
-that venv path:
+checkers only load when `odoo` is importable, so run pylint with the **Python
+interpreter of your Odoo env** — the installer asks for it (`--python`, default:
+system python) and saves it to `.odoo-lint.json`:
 
 ```bash
-"<venv>/bin/pip" install "pylint>=3.0"                       # one-time, in your Odoo venv
-"<venv>/bin/pylint" --rcfile=rules/pylintrc path/to/your_module   # runs Odoo's real checkers
+"<python>" -m pip install "pylint>=3.0"                       # one-time, in your Odoo env
+"<python>" -m pylint --rcfile=rules/pylintrc path/to/your_module   # runs Odoo's real checkers
 npx --yes eslint@8 --no-eslintrc -c rules/eslintrc "your_module/static/src/**/*.js"
 ```
 
 (Odoo running from a source checkout that isn't pip-installed? Pass the source
-root: `ODOO_PATH=/path/to/odoo "<venv>/bin/pylint" --rcfile=rules/pylintrc …`.)
+root: `ODOO_PATH=/path/to/odoo "<python>" -m pylint --rcfile=rules/pylintrc …`.)
 
-The agent remembers the venv (and optional Odoo source root) in a project-root
-`.odoo-lint.json` so it only asks once — add that file to `.gitignore`, the paths
-are per-developer:
+The interpreter (and optional Odoo source root) live in a project-root
+`.odoo-lint.json` so the agent never has to ask — add that file to `.gitignore`,
+the paths are per-developer:
 
 ```json
-{ "venv": "/path/to/venv", "odoo_path": "/path/to/odoo" }
+{ "python": "/path/to/venv/bin/python", "odoo_path": "/path/to/odoo" }
 ```
 
 The bundled [`rules/pylintrc`](rules/pylintrc) loads Odoo's exact checker plugins
