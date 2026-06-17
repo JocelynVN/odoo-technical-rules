@@ -15,39 +15,34 @@ npx odoo-technical-plugins@latest --plugin odoo-test-lint
 
 Or run `npx odoo-technical-plugins@latest` and pick `odoo-test-lint` from the menu.
 
-## 🔎 How to run the checks (Odoo's own linters)
+## 🔎 How to run the checks — Odoo's official `test_lint`
 
-Odoo's `test_lint` isn't a standalone tool — its Python checks are **pylint
-plugins** that live in the Odoo source you already have
-(`odoo/addons/test_lint/tests/_odoo_checker_*.py`), and its JS check is an
-**ESLint** config. Odoo doesn't ship pylint/eslint, so install the linter and
-point it at Odoo's own checkers via the configs in [`rules/`](rules). The
-checkers only load when `odoo` is importable, so run pylint with the **Python
-interpreter of your Odoo env** — the installer asks for it (`--python`, default:
-system python) and saves it to `.odoo-lint.json`:
+Verify with Odoo's own `test_lint`, run through `odoo-bin`. That runs pylint
+(Odoo's `_odoo_checker_*` checkers) and eslint exactly as Odoo CI does:
 
 ```bash
-"<python>" -m pip install "pylint>=3.0"                       # one-time, in your Odoo env
-"<python>" -m pylint --rcfile=rules/pylintrc path/to/your_module   # runs Odoo's real checkers
-npx --yes eslint@8 --no-eslintrc -c rules/eslintrc "your_module/static/src/**/*.js"
+odoo-bin -c odoo.conf -d <db> -u test_lint --test-enable --stop-after-init
 ```
 
-(Odoo running from a source checkout that isn't pip-installed? Pass the source
-root: `ODOO_PATH=/path/to/odoo "<python>" -m pylint --rcfile=rules/pylintrc …`.)
+Notes:
+- It lints **all custom modules** in the addons path (it skips Odoo core); there's
+  no "changed files only" mode, so fix the failures in the files you changed.
+- `test_lint` still needs **pylint and eslint installed** in the Odoo env — Odoo
+  doesn't bundle them and the test silently skips when they're missing
+  (`pip install pylint`, `eslint` via npm).
+- First run installs the module (`-i test_lint`); afterwards `-u test_lint`
+  re-runs it against the current source.
 
-The interpreter (and optional Odoo source root) live in a project-root
-`.odoo-lint.json` so the agent never has to ask — add that file to `.gitignore`,
-the paths are per-developer:
+The command is environment-specific (db, config, addons path, docker…), so the
+installer asks for it (`--test-cmd`) and saves it to a project-root
+`.odoo-lint.json` — add that file to `.gitignore`, it's per-developer:
 
 ```json
-{ "python": "/path/to/venv/bin/python", "odoo_path": "/path/to/odoo" }
+{ "test_lint_cmd": "odoo-bin -c odoo.conf -d <db> -u test_lint --test-enable --stop-after-init" }
 ```
 
-The bundled [`rules/pylintrc`](rules/pylintrc) loads Odoo's exact checker plugins
-(`_odoo_checker_sql_injection`, `_odoo_checker_gettext`,
-`_odoo_checker_unlink_override`) and enables the same messages Odoo CI does, so
-you get the authentic `E8501`/`E8502`/`E8503`/`E8505`/`E8506` checks — not a
-reimplementation. See [`rules/odoo-test-lint.md`](rules/odoo-test-lint.md) for details.
+See [`rules/odoo-test-lint.md`](rules/odoo-test-lint.md) for the full list of
+checks and message IDs (`E8501`/`E8502`/`E8503`/`E8505`/`E8506` + the JS/OWL rules).
 
 ## What it enforces
 
@@ -59,14 +54,12 @@ reimplementation. See [`rules/odoo-test-lint.md`](rules/odoo-test-lint.md) for d
   OWL components must declare `static props`/`static template`, named `_t`
   placeholders, and the usual `no-debugger`/`no-dupe-*`/`no-unused-vars`.
 
-See [`rules/odoo-test-lint.md`](rules/odoo-test-lint.md) for details, and the ready-to-use
-configs [`rules/eslintrc`](rules/eslintrc) and [`rules/pylintrc`](rules/pylintrc).
+See [`rules/odoo-test-lint.md`](rules/odoo-test-lint.md) for the full list of
+checks and how to run Odoo's `test_lint`.
 
 ## Contents
 
 ```text
 skills/odoo-test-lint/SKILL.md   # rules body, written into AGENTS.md / CLAUDE.md
-rules/odoo-test-lint.md          # reference notes
-rules/eslintrc                   # Odoo's ESLint config (usable as-is)
-rules/pylintrc                   # pylint config that loads Odoo's own checkers
+rules/odoo-test-lint.md          # reference notes + how to run test_lint via odoo-bin
 ```

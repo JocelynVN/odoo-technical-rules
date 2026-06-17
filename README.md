@@ -9,7 +9,7 @@ Each plugin is self-contained under [`plugins/`](plugins); the [`npx` installer]
 | Plugin | Description | Docs |
 |--------|-------------|------|
 | [`odoo-technical-rules`](plugins/odoo-technical-rules) | General, vendor-neutral Odoo coding rules (naming, manifest, views, Python/ORM, security, commits, stable policy). VI + EN. | [README](plugins/odoo-technical-rules/README.md) · [Install](plugins/odoo-technical-rules/INSTALL.md) |
-| [`odoo-test-lint`](plugins/odoo-test-lint) | Make Python & JS pass Odoo's official linters (`test_lint` pylint checks + ESLint): SQL-injection, lazy translations, OWL static props/template, no private fields. Ships a `pylintrc` that loads **Odoo's own checker plugins**. | [README](plugins/odoo-test-lint/README.md) |
+| [`odoo-test-lint`](plugins/odoo-test-lint) | Make Python & JS pass Odoo's official linters (`test_lint` pylint checks + ESLint): SQL-injection, lazy translations, OWL static props/template, no private fields. Verifies via **Odoo's own `test_lint`** (`odoo-bin -i test_lint`). | [README](plugins/odoo-test-lint/README.md) |
 
 > More plugins will be added here over time.
 
@@ -36,13 +36,14 @@ It asks which plugin(s) and which agent(s) (multi-select with space) plus the sc
 ```bash
 npx odoo-technical-plugins --agent all          # this project
 npx odoo-technical-plugins --agent codex --global
-npx odoo-technical-plugins --agent claude --plugin odoo-test-lint --python /opt/odoo/venv/bin/python
+npx odoo-technical-plugins --agent claude --plugin odoo-test-lint \
+  --test-cmd "odoo-bin -c odoo.conf -d devdb -u test_lint --test-enable --stop-after-init"
 ```
 
-> Installing `odoo-test-lint` into a project also asks for the Python interpreter
-> of your Odoo env (so pylint can load Odoo's own checkers) and saves it to
-> `.odoo-lint.json`. Pass `--python <path>` to set it non-interactively; omit it
-> and the interactive installer defaults to your system python.
+> Installing `odoo-test-lint` into a project also asks for the command that runs
+> Odoo's official `test_lint` (via `odoo-bin`) and saves it to `.odoo-lint.json`
+> so the agent can verify your code with it. Pass `--test-cmd "<cmd>"` to set it
+> non-interactively, or leave it blank and the agent will ask when needed.
 
 > Pinned to the GitHub source instead of npm? `npx github:JocelynVN/odoo-technical-plugins` works the same (use `--` before flags).
 
@@ -54,11 +55,10 @@ npx odoo-technical-plugins@latest update        # refresh to the latest rules
 npx odoo-technical-plugins uninstall            # remove cleanly
 ```
 
-The `odoo-test-lint` plugin ships ready-to-use `pylintrc`/`eslintrc` configs that
-drive **Odoo's own `test_lint` checkers** (the SQL-injection / gettext /
-unlink-override pylint plugins that live in the Odoo source), so the agent runs
-the authentic Odoo checks rather than a reimplementation — see that
-[plugin's README](plugins/odoo-test-lint/README.md#-how-to-run-the-checks-odoos-own-linters).
+The `odoo-test-lint` plugin makes the agent verify code with **Odoo's official
+`test_lint`** run through `odoo-bin` (the authentic SQL-injection / gettext /
+unlink-override checks + eslint, exactly as Odoo CI does) — see that
+[plugin's README](plugins/odoo-test-lint/README.md#-how-to-run-the-checks--odoos-official-test_lint).
 
 > **Customizing:** the installed rules sit in a `<!-- BEGIN/END <plugin> -->` block
 > that `update` overwrites — keep team tweaks **outside** that block (elsewhere in
@@ -78,7 +78,7 @@ plugins/
     INSTALL.md
   odoo-test-lint/             # plugin #2
     skills/<plugin>/SKILL.md
-    rules/                    # eslintrc + pylintrc (loads Odoo's checkers) + notes
+    rules/odoo-test-lint.md   # checks reference + how to run test_lint via odoo-bin
     README.md
 ```
 

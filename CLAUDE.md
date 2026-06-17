@@ -88,25 +88,24 @@ It then flows through `list`/`install`/`status`/`update`/`uninstall` automatical
 
 ## How odoo-test-lint runs the checks
 
-This plugin does **not** ship its own linter. Odoo's `test_lint` is a set of **pylint plugins**
-(`odoo/addons/test_lint/tests/_odoo_checker_{sql_injection,gettext,unlink_override}.py`) plus an **ESLint**
-config — and Odoo ships neither pylint nor eslint in `requirements.txt` (its own `test_pylint.py` skips
-with "please install pylint" when missing). So the plugin's job is to make the agent **install the real
-linter and point it at Odoo's own checkers**:
+The plugin does **not** ship its own linter or configs. The agent verifies code by running Odoo's official
+`test_lint` through `odoo-bin` (e.g. `odoo-bin -c odoo.conf -d <db> -u test_lint --test-enable
+--stop-after-init`). That runs Odoo's own pylint checkers (`_odoo_checker_*`) and eslint exactly as Odoo
+CI does. Design notes that bit us while iterating, so they're worth keeping:
 
-- `rules/pylintrc` loads Odoo's `_odoo_checker_*` plugins via `load-plugins` and an `init-hook` that adds
-  `odoo/addons/test_lint/tests` (found next to the importable `odoo` package) to `sys.path` — mirroring
-  how `test_pylint.py` itself loads them. It enables the exact message set Odoo CI enables (E8501/E8502/
-  E8503/E8505/E8506 + the standard subset). `pylint-odoo` is documented as a fallback when there's no
-  Odoo source.
-- `rules/eslintrc` is Odoo's own ESLint config, run via `npx eslint@8 --no-eslintrc -c eslintrc`.
+- `test_lint` lints **all custom modules** in the addons path (skips core); `test_pylint.py` has **no**
+  git-changed-files or single-file scoping. So the SKILL tells the agent to run it and then fix failures
+  **in the files it changed** — don't expect the tool to scope itself.
+- It still needs **pylint and eslint installed** in the Odoo env (Odoo ships neither in `requirements.txt`;
+  the test silently skips when missing).
+- The exact command is environment-specific (db, conf, addons path, docker…), so it can't be templated.
+  **`cmdInstall` prompts for the full command** (project scope + `odoo-test-lint` selected; flag
+  `--test-cmd`) and stores it in a project-root **`.odoo-lint.json`** (`{ "test_lint_cmd" }`, merged with
+  any existing keys). Non-interactive installs only write it when `--test-cmd` is passed. The SKILL has the
+  agent read that file and reuse the command.
 
-Those checkers only load when `odoo` is importable, so pylint must run under the Python interpreter of the
-user's Odoo env. To avoid the agent guessing, **`cmdInstall` prompts for that interpreter** (project scope
-+ `odoo-test-lint` selected; flag `--python`, default `findSystemPython()` = `$VIRTUAL_ENV` or first
-`python3` on PATH) and writes it to a project-root **`.odoo-lint.json`** (`{ "python", "odoo_path" }`,
-merged so a hand-added `odoo_path` survives). The SKILL tells the agent to read that file and run
-`"<python>" -m pylint`. Non-interactive installs only write the file when `--python` is passed.
-
-We deliberately rejected shipping a stdlib reimplementation: having the Odoo source present means the
-authentic checkers are already there, so a reimplementation would only risk drift and false positives.
+History (don't re-litigate): we tried (a) a stdlib reimplementation of the checkers, then (b) shipping
+`rules/pylintrc`+`eslintrc` to drive pylint/eslint per-file. Both were dropped in favour of the official
+`odoo-bin` route — (a) risked drift from Odoo, and the owner wanted only the canonical test, not custom
+per-file linting. If you find a stray reference to `odoo_lint.py`, a `lint` CLI command, `pylintrc`, or
+`eslintrc`, it's leftover and should be removed.

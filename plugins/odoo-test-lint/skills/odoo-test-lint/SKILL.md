@@ -5,8 +5,8 @@ description: Make AI-written Odoo code pass Odoo's official linters — the pyli
 
 # Odoo Lint Rules
 
-Write Python and JS that passes Odoo's own linters (`odoo/addons/test_lint`: `test_pylint.py` + `test_eslint.py` / `eslintrc`). Ready-to-use lint configs and full notes:
-https://github.com/JocelynVN/odoo-technical-plugins/tree/main/plugins/odoo-test-lint/rules
+Write Python and JS that passes Odoo's own linters (`odoo/addons/test_lint`: `test_pylint.py` + `test_eslint.py`), and verify with **Odoo's official `test_lint`** (run via `odoo-bin`, see below). Full notes:
+https://github.com/JocelynVN/odoo-technical-plugins/blob/main/plugins/odoo-test-lint/rules/odoo-test-lint.md
 
 ## Python — pylint (the checks Odoo's `test_lint` enables)
 
@@ -26,64 +26,41 @@ https://github.com/JocelynVN/odoo-technical-plugins/tree/main/plugins/odoo-test-
 - `_t(...)` must not contain multiple unnamed `%s` placeholders — use named placeholders.
 - Never lint or commit third-party / minified libs (`/lib/` paths are excluded).
 
-## How to actually run these checks (use Odoo's own linters)
+## How to run the checks — Odoo's official `test_lint` (via `odoo-bin`)
 
-Odoo's `test_lint` is **not** a standalone linter — its Python checks are
-**pylint plugins** living in the Odoo source you already have
-(`odoo/addons/test_lint/tests/_odoo_checker_*.py`), and its JS check is an
-**ESLint** config. Odoo does not ship pylint/eslint in `requirements.txt`, and
-its own test silently *skips* when they're missing — so you must install the
-linter, then point it at Odoo's own checkers. Two ready-to-use configs ship in
-this plugin's [`rules/`](https://github.com/JocelynVN/odoo-technical-plugins/tree/main/plugins/odoo-test-lint/rules).
+Always verify with Odoo's own `test_lint` test run through `odoo-bin`. That runs
+both pylint (Odoo's `_odoo_checker_*` checkers) and eslint exactly as Odoo CI
+does — no custom per-file linting. Notes:
 
-**Python — pylint loading Odoo's real checkers** (exact same checks as Odoo CI).
-The checkers only load when `odoo` is importable, so you must run pylint with the
-**Python interpreter of the user's Odoo env** — not a random global one:
+- It lints **all custom modules** in the addons path (it skips Odoo core); there
+  is **no built-in "changed files only" mode**. So after a run, focus on fixing
+  the failures **in the files you changed**.
+- `odoo-bin -i test_lint` still needs **pylint and eslint installed** in the Odoo
+  env (Odoo doesn't bundle them and the test silently skips when they're missing):
+  `pip install pylint` and install `eslint` (npm).
 
-1. **Find the interpreter.** Read `.odoo-lint.json` in the project root and use its
-   `python` field. The installer writes this at install time; if the file is
-   missing, **ask the user** for their Odoo Python path (e.g.
-   `/path/to/venv/bin/python`) and **write it** there so you never ask again — then
-   add `.odoo-lint.json` to `.gitignore` (paths are per-developer). Valid JSON,
-   `odoo_path` optional (see step 3):
+**Steps:**
+
+1. **Get the run command.** Read `.odoo-lint.json` in the project root and use its
+   `test_lint_cmd`. The installer can write it; if it's missing, **ask the user**
+   for the exact command that runs `test_lint` in their setup (the db name, config
+   file, addons path, docker wrapper, etc. all vary), and **save it** so you never
+   ask again — then add `.odoo-lint.json` to `.gitignore` (it's per-developer):
    ```json
-   { "python": "/path/to/venv/bin/python", "odoo_path": "/path/to/odoo" }
+   { "test_lint_cmd": "odoo-bin -c odoo.conf -d <db> -u test_lint --test-enable --stop-after-init" }
    ```
-2. **Run pylint via that interpreter** (it loads Odoo's checkers automatically
-   because `odoo` is importable there):
-   ```bash
-   "<python>" -m pylint --rcfile=<this plugin's rules/pylintrc> path/to/your_module
-   ```
-   Install pylint into that interpreter once if missing:
-   `"<python>" -m pip install "pylint>=3.0"` (Odoo doesn't bundle it).
-3. **Source-checkout fallback.** If Odoo runs from a source tree that isn't
-   pip-installed (so `import odoo` fails even there), pass the Odoo root via
-   `ODOO_PATH=/path/to/odoo "<python>" -m pylint …` — store it as `odoo_path` in
-   `.odoo-lint.json` (ask once if absent).
-
-The bundled `pylintrc` lists Odoo's plugins (`_odoo_checker_sql_injection`,
-`_odoo_checker_gettext`, `_odoo_checker_unlink_override` + `bad_builtin`) and
-enables the exact messages Odoo CI does. (No Odoo source at all? `"<python>" -m
-pip install pylint-odoo` and swap the three `_odoo_checker_*` plugins for
-`pylint_odoo` in the rcfile.)
-
-**JavaScript — ESLint with Odoo's config:**
-
-```bash
-npx --yes eslint@8 --no-eslintrc -c <this plugin's rules/eslintrc> \
-    "your_module/static/src/**/*.js"     # skip /lib/ and *.min.js
-```
+   (First time the module isn't installed yet, use `-i test_lint`; afterwards
+   `-u test_lint` re-runs it against the current source.)
+2. **Run it**, read the pylint/eslint failures in the test log, and **fix every
+   failure in the files you changed.** Re-run until those are clean.
+3. If you can't run it (no `test_lint_cmd`, or pylint/eslint not installed and you
+   can't install them), **say so explicitly** and list what you checked manually
+   against the rules above — don't silently skip it.
 
 ## Required workflow
 
 After you write or modify any Python or JavaScript in an Odoo module, before you
-report the task as done you MUST:
+report the task as done you MUST run Odoo's `test_lint` (step 1–2 above) and fix
+every failure in the files you touched.
 
-1. **Run the linter on the files/module you changed** — pylint with this plugin's
-   `pylintrc` (Python) and/or ESLint with its `eslintrc` (JS), as shown above.
-2. **Fix every reported error.** Re-run until clean.
-3. If the linter isn't installed and you can't install it, **say so explicitly**
-   and list what you checked manually against the rules above — don't silently
-   skip it.
-
-Do not consider the task complete while lint errors remain.
+Do not consider the task complete while lint errors in your changes remain.

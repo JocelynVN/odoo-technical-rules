@@ -5,12 +5,25 @@ Mirrors the checks in Odoo's official **`test_lint`** module
 which is what quality gates like Viindoo's `test_pylint` build on. Two linters:
 **pylint** for Python and **ESLint** for JavaScript.
 
-> **Important:** `test_lint` is not a standalone tool. The Python checks are
-> **pylint plugins** in the Odoo source (`odoo/addons/test_lint/tests/_odoo_checker_*.py`)
-> and the JS check is an **ESLint** config — and Odoo ships *neither* pylint nor
-> eslint in `requirements.txt` (its own test skips when they're missing). So you
-> install the linter once, then point it at Odoo's own checkers using the
-> [`pylintrc`](pylintrc) / [`eslintrc`](eslintrc) in this folder (see "Run it" below).
+## How to run it — `odoo-bin -i test_lint`
+
+Run Odoo's official `test_lint` through `odoo-bin`; it runs both linters exactly
+as Odoo CI does:
+
+```bash
+odoo-bin -c odoo.conf -d <db> -u test_lint --test-enable --stop-after-init
+```
+
+- First run installs the module (`-i test_lint`); afterwards `-u test_lint`
+  re-runs it against the current source.
+- It lints **all custom modules** in the addons path (Odoo core is skipped); there
+  is **no "changed files only" mode** — fix the failures in the files you changed.
+- `test_lint` still needs **pylint and eslint installed** in the Odoo env (Odoo
+  ships neither in `requirements.txt`, and the test silently skips when they're
+  missing): `pip install pylint`, and `eslint` via npm.
+
+The command is environment-specific, so the npx installer asks for it and stores
+it in a project-root `.odoo-lint.json` (`test_lint_cmd`) for the agent to reuse.
 
 ## Python — pylint
 
@@ -48,24 +61,14 @@ high-signal set of checks plus custom Odoo checkers.
           raise UserError(self.env._("Locked records cannot be deleted."))
   ```
 
-**Run it** — the [`pylintrc`](pylintrc) here loads Odoo's own checker plugins
-(`_odoo_checker_*`) from the Odoo source, so you get the authentic Odoo checks.
-Run pylint with **your Odoo env's Python interpreter** so `odoo` is importable
-(the npx installer saves it to `.odoo-lint.json`):
-```bash
-"<python>" -m pip install "pylint>=3.0"              # Odoo doesn't bundle pylint
-"<python>" -m pylint --rcfile=pylintrc path/to/your_module
-```
-The rcfile's `init-hook` locates the checkers next to the importable `odoo`
-package. If Odoo runs from a source checkout that isn't pip-installed, export the
-Odoo root instead: `ODOO_PATH=/path/to/odoo "<python>" -m pylint --rcfile=pylintrc …`.
-No Odoo source? `"<python>" -m pip install pylint-odoo` and swap the
-`_odoo_checker_*` plugins for `pylint_odoo` in the rcfile.
+These checkers (`_odoo_checker_*`) live in the Odoo source and run automatically
+when you invoke `test_lint` via `odoo-bin` (see "How to run it" above).
 
 ## JavaScript — ESLint
 
-Odoo's `test_eslint.py` runs ESLint with the bundled [`eslintrc`](eslintrc)
-over `**/static/**/*.js` (excluding `/lib/` and generated code).
+Odoo's `test_eslint.py` runs ESLint with Odoo's bundled `eslintrc`
+over `**/static/**/*.js` (excluding `/lib/` and generated code) — included in the
+same `odoo-bin -i test_lint` run.
 
 Key rules:
 - `no-undef` + an allowlist of globals (`odoo`, `luxon`, `$`, `jQuery`, `owl`, …).
@@ -76,10 +79,6 @@ Key rules:
   - **OWL `Component` subclasses must declare `static props` and `static template`.**
   - `_t(...)` must not contain multiple unnamed `%s` placeholders — use named ones.
 
-**Run it** (eslint isn't bundled by Odoo either — fetch it via npx):
-```bash
-npx --yes eslint@8 --no-eslintrc -c eslintrc "your_module/static/src/**/*.js"
-```
 Point-of-sale modules use a stricter config (`web/tooling/_eslintrc.json`) in Odoo.
 
 > Never commit minified JS and never lint third-party libraries under `/lib/`.
