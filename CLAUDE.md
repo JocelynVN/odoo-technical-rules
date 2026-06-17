@@ -44,6 +44,12 @@ block in the target agent's instruction file.
 - **`SKILL.md` body is the installed content.** `skillBody()` strips the YAML frontmatter and the
   remaining Markdown is what gets written. The frontmatter `description` is reused as the Cursor
   global `.mdc` description.
+- **Full ruleset is copied locally too.** `localizeRules()` copies the rule files a SKILL.md links
+  to (the GitHub `…/rules/*.md` URLs) into `<project>/.<plugin>/` (or `~/.<plugin>/` for `--global`)
+  and rewrites those links to the local path — relative for a project, absolute for global — so the
+  agent reads the full rules with its Read tool instead of fetching a URL. The copied dir is recorded
+  as a `paths` entry in the manifest (shared across the project's agents; copied once per run via the
+  `_copiedRules` guard). Plugins whose SKILL.md links no rules file are unaffected.
 - **Per-agent destination** (see `installAgent()`): rules must load at the *start* of every session, so
   they go into each agent's always-on file, not a lazy-loaded skill:
   | Agent | Project | Global |
@@ -70,9 +76,12 @@ older layouts, so `collectInstalled()` **merges** two sources per plugin+agent:
 2. `discover()` — on-disk scan for current blocks/mdc **and** legacy layouts (`<=2.0` skill dirs under
    `.<agent>/skills/`, `<=1.4` project `.cursor/rules/*.mdc`).
 
-When uninstalling, a block in a **shared** `AGENTS.md` must survive if another kept install still owns
-it — `keepBlocks` is computed from the **manifest** (not discovery, which can't tell who owns a shared
-file) to decide what to leave. Touch this logic carefully: it's the subtle part.
+When uninstalling, a block in a **shared** `AGENTS.md` — or the **shared** local `.<plugin>/` ruleset
+dir used by all the project's agents — must survive if another kept install still owns it. `keepBlocks`
+(for blocks) and `keepPaths` (for paths) are both computed from the **manifest** (not discovery, which
+can't tell who owns a shared file) to decide what to leave. `discover()` only attaches `.<plugin>/` to
+an agent that also has a live block/mdc, so a phantom install is never reported. Touch this logic
+carefully: it's the subtle part.
 
 ## Adding a plugin
 
@@ -85,6 +94,8 @@ It then flows through `list`/`install`/`status`/`update`/`uninstall` automatical
 
 > The two existing plugins keep their full rulesets under `plugins/<name>/rules/` and link to the
 > GitHub-hosted copies from `SKILL.md`; the `SKILL.md` body is only the everyday checklist/summary.
+> Keep those links as real GitHub `…/rules/*.md` URLs so they work when browsing the repo — `install`
+> copies the file locally and rewrites the link there (see `localizeRules()` above).
 
 ## How odoo-test-lint runs the checks
 

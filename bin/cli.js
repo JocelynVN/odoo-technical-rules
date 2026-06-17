@@ -183,6 +183,53 @@ function skillBody(plugin) {
   return txt.replace(/^---\n[\s\S]*?\n---\n/, '').trim();
 }
 
+/* ------------------------- local ruleset copy --------------------------- */
+/* A plugin keeps its full ruleset under plugins/<name>/rules/ and links to the
+ * GitHub-hosted copies from SKILL.md. On install we ALSO drop the referenced
+ * files next to the project (or under ~ for --global) and rewrite those links to
+ * the local copy, so the agent reads the full rules with its Read tool instead
+ * of fetching a URL (more reliable, works offline). The copied dir is tracked in
+ * the manifest as a `paths` entry so update/uninstall manage it. */
+
+const _copiedRules = new Set(); // destDirs already written this run (avoid 3× per-agent copy)
+
+function pluginRulesDir(plugin) {
+  const d = path.join(plugin.dir, 'rules');
+  return fs.existsSync(d) ? d : null;
+}
+
+// Where the plugin's rules land for a scope: <project>/.<plugin> or ~/.<plugin>.
+function rulesDestDir(plugin, base) {
+  return path.join(base, '.' + plugin.name);
+}
+
+// Copy the rule files referenced by GitHub links in `body`, then rewrite those
+// links to the local copy. Returns { body, paths } (paths = the dir, for the
+// manifest). No-op for plugins whose SKILL.md links no rules file.
+function localizeRules(body, plugin, target, isGlobal) {
+  const srcDir = pluginRulesDir(plugin);
+  if (!srcDir) return { body, paths: [] };
+  const destDir = rulesDestDir(plugin, isGlobal ? os.homedir() : target);
+  const linkDir = isGlobal ? destDir : '.' + plugin.name; // relative path for a project
+  const names = new Set();
+  const newBody = body.replace(
+    /https:\/\/github\.com\/[^\s)]+\/rules\/([^\s)]+\.md)/g,
+    (m, file) => {
+      if (!fs.existsSync(path.join(srcDir, file))) return m; // link points elsewhere, leave it
+      names.add(file);
+      return `${linkDir}/${file}`;
+    }
+  );
+  if (!names.size) return { body, paths: [] };
+  if (!_copiedRules.has(destDir)) {
+    fs.mkdirSync(destDir, { recursive: true });
+    for (const f of names) fs.copyFileSync(path.join(srcDir, f), path.join(destDir, f));
+    console.log(C.g(`  rules → ${destDir}`));
+    _copiedRules.add(destDir);
+  }
+  return { body: newBody, paths: [destDir] };
+}
+
 function stripBlock(text, marker) {
   const re = new RegExp(`\\n*<!-- BEGIN ${marker} -->[\\s\\S]*?<!-- END ${marker} -->\\n*`, 'g');
   return text.replace(re, '\n');
@@ -216,23 +263,27 @@ function writeCursorGlobalMdc(plugin, body) {
 }
 
 function installAgent(plugin, agent, target, isGlobal) {
-  const body = skillBody(plugin);
+  let body = skillBody(plugin);
   if (!body) {
     console.log(C.y(`  ${AGENT_LABEL[agent]}: no SKILL.md, skipped.`));
     return null;
   }
+  // Drop the full ruleset locally and point the SKILL links at that copy.
+  const rules = localizeRules(body, plugin, target, isGlobal);
+  body = rules.body;
+
+  let desc = null;
   if (agent === 'claude') {
-    return writeBlock(isGlobal ? home('.claude', 'CLAUDE.md') : path.join(target, 'CLAUDE.md'), plugin, body, 'Claude');
-  }
-  if (agent === 'codex') {
-    return writeBlock(isGlobal ? home('.codex', 'AGENTS.md') : path.join(target, 'AGENTS.md'), plugin, body, 'Codex');
-  }
-  if (agent === 'cursor') {
-    return isGlobal
+    desc = writeBlock(isGlobal ? home('.claude', 'CLAUDE.md') : path.join(target, 'CLAUDE.md'), plugin, body, 'Claude');
+  } else if (agent === 'codex') {
+    desc = writeBlock(isGlobal ? home('.codex', 'AGENTS.md') : path.join(target, 'AGENTS.md'), plugin, body, 'Codex');
+  } else if (agent === 'cursor') {
+    desc = isGlobal
       ? writeCursorGlobalMdc(plugin, body)
       : writeBlock(path.join(target, 'AGENTS.md'), plugin, body, 'Cursor');
   }
-  return null;
+  if (desc) for (const p of rules.paths) if (!desc.paths.includes(p)) desc.paths.push(p);
+  return desc;
 }
 
 const WRITERS = {
@@ -242,8 +293,10 @@ const WRITERS = {
 };
 
 // keepBlocks: file|marker keys still referenced by a remaining install (shared AGENTS.md).
-function removeDescriptor(entry, keepBlocks = new Set()) {
+// keepPaths: paths still referenced by a remaining install (shared local ruleset dir).
+function removeDescriptor(entry, keepBlocks = new Set(), keepPaths = new Set()) {
   for (const p of entry.paths || []) {
+    if (keepPaths.has(p)) continue;
     if (fs.existsSync(p)) {
       rmrf(p);
       console.log(C.g(`  removed → ${p}`));
@@ -299,6 +352,13 @@ function discover(plugin, agent, target, isGlobal) {
   if (agent === 'cursor' && !isGlobal) {
     const mdc = path.join(base, '.cursor', 'rules', `${plugin.name}.mdc`);
     if (fs.existsSync(mdc)) paths.push(mdc);
+  }
+
+  // companion local ruleset dir (shared across agents) — only claim it next to an
+  // actual block/mdc for this agent, else we'd flag a phantom install.
+  if ((paths.length || blocks.length) && pluginRulesDir(plugin)) {
+    const rulesDir = rulesDestDir(plugin, base);
+    if (fs.existsSync(rulesDir) && !paths.includes(rulesDir)) paths.push(rulesDir);
   }
 
   return paths.length || blocks.length ? { paths, blocks } : null;
@@ -620,8 +680,12 @@ async function cmdUninstall(args) {
   // was actually installed; on-disk discovery can't tell who owns a shared file.
   const remaining = (manifest.installs || []).filter((e) => !removed.has(e.plugin + '|' + e.agent));
   const keepBlocks = new Set();
-  for (const e of remaining) for (const b of e.blocks || []) keepBlocks.add(`${b.file}|${b.marker}`);
-  for (const e of toRemove) removeDescriptor(e, keepBlocks);
+  const keepPaths = new Set();
+  for (const e of remaining) {
+    for (const b of e.blocks || []) keepBlocks.add(`${b.file}|${b.marker}`);
+    for (const p of e.paths || []) keepPaths.add(p);
+  }
+  for (const e of toRemove) removeDescriptor(e, keepBlocks, keepPaths);
   manifest.installs = (manifest.installs || []).filter((e) => !removed.has(e.plugin + '|' + e.agent));
   saveManifest(mp, manifest);
   console.log('\n' + C.g('Uninstalled.'));
