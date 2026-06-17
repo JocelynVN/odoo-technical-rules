@@ -35,6 +35,14 @@ npx --yes eslint@8 --no-eslintrc -c rules/eslintrc "your_module/static/src/**/*.
 (Odoo running from a source checkout that isn't pip-installed? Pass the source
 root: `ODOO_PATH=/path/to/odoo "<venv>/bin/pylint" --rcfile=rules/pylintrc …`.)
 
+The agent remembers the venv (and optional Odoo source root) in a project-root
+`.odoo-lint.json` so it only asks once — add that file to `.gitignore`, the paths
+are per-developer:
+
+```json
+{ "venv": "/path/to/venv", "odoo_path": "/path/to/odoo" }
+```
+
 The bundled [`rules/pylintrc`](rules/pylintrc) loads Odoo's exact checker plugins
 (`_odoo_checker_sql_injection`, `_odoo_checker_gettext`,
 `_odoo_checker_unlink_override`) and enables the same messages Odoo CI does, so
