@@ -36,14 +36,13 @@ It asks which plugin(s) and which agent(s) (multi-select with space) plus the sc
 ```bash
 npx odoo-technical-plugins --agent all          # this project
 npx odoo-technical-plugins --agent codex --global
-npx odoo-technical-plugins --agent claude --plugin odoo-test-lint \
-  --test-cmd "odoo-bin -c odoo.conf -d devdb -u test_lint --test-enable --stop-after-init"
+npx odoo-technical-plugins --agent claude --plugin odoo-test-lint --venv /opt/odoo/venv
 ```
 
-> Installing `odoo-test-lint` into a project also asks for the command that runs
-> Odoo's official `test_lint` (via `odoo-bin`) and saves it to `.odoo-lint.json`
-> so the agent can verify your code with it. Pass `--test-cmd "<cmd>"` to set it
-> non-interactively, or leave it blank and the agent will ask when needed.
+> Installing `odoo-test-lint` into a project also asks for the **Python of your
+> Odoo env** (so the agent can run Odoo's official `test_lint` with it) and saves
+> it to `.odoo-lint.json`. Pass `--venv <dir>` (or `--python <path>`) to set it
+> non-interactively; the interactive installer defaults to your system python.
 
 > Pinned to the GitHub source instead of npm? `npx github:JocelynVN/odoo-technical-plugins` works the same (use `--` before flags).
 

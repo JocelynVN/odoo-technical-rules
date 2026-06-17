@@ -65,11 +65,12 @@ function parseArgs(argv) {
     else if (a === '--agent') args.agent = argv[++i];
     else if (a === '--plugin') args.plugin = argv[++i];
     else if (a === '--dir') args.dir = argv[++i];
-    else if (a === '--test-cmd') args.testCmd = argv[++i];
+    else if (a === '--python' || a === '--venv') args.python = argv[++i];
     else if (a.startsWith('--agent=')) args.agent = a.slice(8);
     else if (a.startsWith('--plugin=')) args.plugin = a.slice(9);
     else if (a.startsWith('--dir=')) args.dir = a.slice(6);
-    else if (a.startsWith('--test-cmd=')) args.testCmd = a.slice(11);
+    else if (a.startsWith('--python=')) args.python = a.slice(9);
+    else if (a.startsWith('--venv=')) args.python = a.slice(7);
     else args._.push(a);
   }
   return args;
@@ -94,8 +95,8 @@ ${C.bold('Flags')}
   --agent <claude|codex|cursor|all>   target agent(s)
   --plugin <name>                     plugin to act on (default: all)
   --dir <path>                        project directory (default: current dir)
-  --test-cmd <cmd>                    odoo-bin test_lint command for odoo-test-lint
-                                      ${C.d('(saved to .odoo-lint.json)')}
+  --venv, --python <path>             Odoo venv (or its python) for odoo-test-lint
+                                      ${C.d('(saved to .odoo-lint.json; default: system python)')}
   --global                            act at user level instead of a project
   -y, --yes                           skip confirmation prompts
   -h, --help                          show this help
@@ -128,23 +129,40 @@ function home(...parts) {
 
 /* ------------------------- odoo-test-lint config ------------------------ */
 /* odoo-test-lint verifies code with Odoo's official `test_lint` run via
- * `odoo-bin`. That command is environment-specific (db, config, addons path,
- * docker wrapper...), so we record it in a project-root .odoo-lint.json and the
- * agent reuses it instead of asking every time. */
+ * `odoo-bin`. The only per-developer thing we capture at install time is the
+ * Python of the user's Odoo env, recorded in a project-root .odoo-lint.json so
+ * the agent runs test_lint with the right interpreter without asking. */
 
 const ODOO_TEST_LINT = 'odoo-test-lint';
 
-// Merge { test_lint_cmd } into <target>/.odoo-lint.json, preserving other keys.
-function writeOdooLintConfig(target, cmd) {
+// Default Python: the active virtualenv's, else the first python3/python on PATH.
+function findSystemPython() {
+  if (process.env.VIRTUAL_ENV) {
+    const p = path.join(process.env.VIRTUAL_ENV, 'bin', 'python');
+    if (fs.existsSync(p)) return p;
+  }
+  for (const dir of (process.env.PATH || '').split(path.delimiter)) {
+    for (const name of ['python3', 'python']) {
+      if (dir && fs.existsSync(path.join(dir, name))) return path.join(dir, name);
+    }
+  }
+  return 'python3';
+}
+
+// Accept either a venv directory or a python interpreter path, store the
+// interpreter as { python } in <target>/.odoo-lint.json (preserving other keys).
+function writeOdooLintConfig(target, pyPath) {
+  const inDir = path.join(pyPath, 'bin', 'python'); // user may paste the venv dir
+  const python = fs.existsSync(inDir) ? inDir : pyPath;
   const file = path.join(target, '.odoo-lint.json');
   let cfg = {};
   if (fs.existsSync(file)) {
     try { cfg = readJSON(file); } catch { cfg = {}; }
   }
-  cfg.test_lint_cmd = cmd;
+  cfg.python = python;
   fs.writeFileSync(file, JSON.stringify(cfg, null, 2) + '\n');
-  console.log(C.g(`  odoo-test-lint: test_lint command → ${file}`));
-  console.log(C.d('  add .odoo-lint.json to .gitignore (the command is per-developer)'));
+  console.log(C.g(`  odoo-test-lint: python → ${file}`));
+  console.log(C.d('  add .odoo-lint.json to .gitignore (the path is per-developer)'));
 }
 
 /* ----------------------- per-agent write / remove ----------------------- */
@@ -524,20 +542,19 @@ async function cmdInstall(args) {
   }
   saveManifest(mp, manifest);
 
-  // odoo-test-lint (project scope only): record the `odoo-bin ... -i test_lint`
-  // command so the agent can run Odoo's official lint without asking later.
+  // odoo-test-lint (project scope only): record the Python of the user's Odoo
+  // env so the agent can run Odoo's official test_lint with it later.
   const hasLint = chosenPlugins.some((p) => p.name === ODOO_TEST_LINT);
   if (hasLint && !isGlobal) {
-    let cmd = args.testCmd;
-    if (!cmd && !nonInteractive && process.stdin.isTTY) {
-      console.log(
-        C.d('\nodoo-test-lint runs Odoo\'s official test_lint via odoo-bin.') +
-          C.d('\ne.g. odoo-bin -c odoo.conf -d <db> -u test_lint --test-enable --stop-after-init')
+    let py = args.python;
+    if (!py && !nonInteractive && process.stdin.isTTY) {
+      const def = findSystemPython();
+      const ans = await ask(
+        `\nOdoo venv (or its python) for ${ODOO_TEST_LINT} ${C.d('[' + def + ']')}: `
       );
-      const ans = await ask('Command to run test_lint ' + C.d('(blank to set later)') + ': ');
-      cmd = ans || null;
+      py = ans || def;
     }
-    if (cmd) writeOdooLintConfig(target, cmd);
+    if (py) writeOdooLintConfig(target, py);
   }
 
   console.log('\n' + C.g('Done.') + ' ' + C.d(`Tracked in ${mp}. Reload your AI agent.`));

@@ -98,11 +98,12 @@ CI does. Design notes that bit us while iterating, so they're worth keeping:
   **in the files it changed** — don't expect the tool to scope itself.
 - It still needs **pylint and eslint installed** in the Odoo env (Odoo ships neither in `requirements.txt`;
   the test silently skips when missing).
-- The exact command is environment-specific (db, conf, addons path, docker…), so it can't be templated.
-  **`cmdInstall` prompts for the full command** (project scope + `odoo-test-lint` selected; flag
-  `--test-cmd`) and stores it in a project-root **`.odoo-lint.json`** (`{ "test_lint_cmd" }`, merged with
-  any existing keys). Non-interactive installs only write it when `--test-cmd` is passed. The SKILL has the
-  agent read that file and reuse the command.
+- The only per-developer thing captured at install is the **Python of the Odoo env**: `cmdInstall` prompts
+  for it (project scope + `odoo-test-lint` selected; flag `--venv`/`--python`, default `findSystemPython()`
+  = `$VIRTUAL_ENV` or first `python3` on PATH; a pasted venv dir is normalized to `<dir>/bin/python`) and
+  stores it as `{ "python" }` in a project-root **`.odoo-lint.json`** (merged with existing keys).
+  Non-interactive installs only write it when the flag is passed. The SKILL has the agent read `python` and
+  run `"<python>" odoo-bin … -i test_lint`, caching the env-specific `odoo_bin`/`db` in the same file.
 
 History (don't re-litigate): we tried (a) a stdlib reimplementation of the checkers, then (b) shipping
 `rules/pylintrc`+`eslintrc` to drive pylint/eslint per-file. Both were dropped in favour of the official

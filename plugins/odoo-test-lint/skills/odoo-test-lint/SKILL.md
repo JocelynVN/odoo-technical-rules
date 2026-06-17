@@ -41,21 +41,26 @@ does — no custom per-file linting. Notes:
 
 **Steps:**
 
-1. **Get the run command.** Read `.odoo-lint.json` in the project root and use its
-   `test_lint_cmd`. The installer can write it; if it's missing, **ask the user**
-   for the exact command that runs `test_lint` in their setup (the db name, config
-   file, addons path, docker wrapper, etc. all vary), and **save it** so you never
-   ask again — then add `.odoo-lint.json` to `.gitignore` (it's per-developer):
+1. **Find the Odoo Python.** Read `.odoo-lint.json` in the project root and use its
+   `python` field — the interpreter of the user's Odoo env (the installer saves it
+   at install time). If it's missing, **ask the user** for their Odoo venv (or its
+   python) and save it, then add `.odoo-lint.json` to `.gitignore` (per-developer).
+   Cache `odoo_bin`/`db` in the same file once you learn them so you never re-ask:
    ```json
-   { "test_lint_cmd": "odoo-bin -c odoo.conf -d <db> -u test_lint --test-enable --stop-after-init" }
+   { "python": "/path/to/venv/bin/python", "odoo_bin": "/path/to/odoo/odoo-bin", "db": "<db>" }
    ```
-   (First time the module isn't installed yet, use `-i test_lint`; afterwards
-   `-u test_lint` re-runs it against the current source.)
-2. **Run it**, read the pylint/eslint failures in the test log, and **fix every
-   failure in the files you changed.** Re-run until those are clean.
-3. If you can't run it (no `test_lint_cmd`, or pylint/eslint not installed and you
-   can't install them), **say so explicitly** and list what you checked manually
-   against the rules above — don't silently skip it.
+2. **Run Odoo's `test_lint` with that interpreter** (ask once for the `odoo-bin`
+   path / db / config if you don't know them):
+   ```bash
+   "<python>" <odoo_bin> -c odoo.conf -d <db> -u test_lint --test-enable --stop-after-init
+   ```
+   First time the module isn't installed yet → use `-i test_lint`; afterwards
+   `-u test_lint` re-runs it against the current source.
+3. **Read the pylint/eslint failures** in the test log and **fix every failure in
+   the files you changed.** Re-run until those are clean. If you can't run it (no
+   `python`, or pylint/eslint not installed in that env and you can't install
+   them), **say so explicitly** and list what you checked manually — don't silently
+   skip it.
 
 ## Required workflow
 

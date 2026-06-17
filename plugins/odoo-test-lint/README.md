@@ -33,13 +33,16 @@ Notes:
 - First run installs the module (`-i test_lint`); afterwards `-u test_lint`
   re-runs it against the current source.
 
-The command is environment-specific (db, config, addons path, docker…), so the
-installer asks for it (`--test-cmd`) and saves it to a project-root
-`.odoo-lint.json` — add that file to `.gitignore`, it's per-developer:
+At install time the installer asks for the **Python of your Odoo env**
+(`--venv`/`--python`, default: system python) and saves it to a project-root
+`.odoo-lint.json`, so the agent runs `test_lint` with the right interpreter
+without asking — add that file to `.gitignore`, it's per-developer:
 
 ```json
-{ "test_lint_cmd": "odoo-bin -c odoo.conf -d <db> -u test_lint --test-enable --stop-after-init" }
+{ "python": "/path/to/venv/bin/python", "odoo_bin": "/path/to/odoo/odoo-bin", "db": "<db>" }
 ```
+
+(Only `python` is set at install; the agent caches `odoo_bin`/`db` once it learns them.)
 
 See [`rules/odoo-test-lint.md`](rules/odoo-test-lint.md) for the full list of
 checks and message IDs (`E8501`/`E8502`/`E8503`/`E8505`/`E8506` + the JS/OWL rules).

@@ -22,8 +22,9 @@ odoo-bin -c odoo.conf -d <db> -u test_lint --test-enable --stop-after-init
   ships neither in `requirements.txt`, and the test silently skips when they're
   missing): `pip install pylint`, and `eslint` via npm.
 
-The command is environment-specific, so the npx installer asks for it and stores
-it in a project-root `.odoo-lint.json` (`test_lint_cmd`) for the agent to reuse.
+At install time the npx installer asks for the **Python of your Odoo env** and
+saves it to a project-root `.odoo-lint.json` (`python`), so the agent runs
+`"<python>" odoo-bin … -i test_lint` with the right interpreter without asking.
 
 ## Python — pylint
 
